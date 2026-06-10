@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anlık Çeviri — Türkçe → İngilizce</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>🌐 Anlık Çeviri</h1>
+    <p class="subtitle">Türkçe konuş ya da yaz, anında İngilizceye çevrilsin</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="voice">🎤 Sesli Çeviri</button>
+    <button class="tab-btn" data-tab="text">✍️ Yazılı Çeviri</button>
+    <button class="tab-btn" data-tab="practice">📚 Seviyeli Pratik</button>
+  </nav>
+
+  <main>
+    <!-- ============ SESLİ ÇEVİRİ ============ -->
+    <section id="tab-voice" class="tab-panel active">
+      <div class="voice-controls">
+        <button id="mic-btn" class="mic-btn" title="Dinlemeyi başlat/durdur">
+          <span class="mic-icon">🎤</span>
+          <span id="mic-label">Dinlemeyi Başlat</span>
+        </button>
+        <label class="toggle">
+          <input type="checkbox" id="speak-toggle" checked />
+          <span>Çeviriyi sesli oku 🔊</span>
+        </label>
+        <button id="clear-voice-btn" class="ghost-btn">Temizle</button>
+      </div>
+
+      <div id="voice-status" class="status-bar">Mikrofon kapalı. Başlatmak için butona basın.</div>
+
+      <div class="dual-pane">
+        <div class="pane">
+          <h3>🇹🇷 Türkçe (dinlenen)</h3>
+          <div id="voice-source" class="pane-content" aria-live="polite">
+            <span class="placeholder">Konuştuklarınız burada görünecek…</span>
+          </div>
+        </div>
+        <div class="pane">
+          <h3>🇬🇧 İngilizce (çeviri)</h3>
+          <div id="voice-target" class="pane-content" aria-live="polite">
+            <span class="placeholder">Çeviri burada görünecek…</span>
+          </div>
+        </div>
+      </div>
+      <p id="speech-support-warning" class="warning hidden">
+        ⚠️ Tarayıcınız konuşma tanımayı desteklemiyor. Chrome veya Edge kullanmayı deneyin.
+      </p>
+    </section>
+
+    <!-- ============ YAZILI ÇEVİRİ ============ -->
+    <section id="tab-text" class="tab-panel">
+      <div class="dual-pane">
+        <div class="pane">
+          <h3>🇹🇷 Türkçe</h3>
+          <textarea id="text-source" placeholder="Çevrilecek Türkçe metni buraya yazın…"></textarea>
+        </div>
+        <div class="pane">
+          <h3>🇬🇧 İngilizce</h3>
+          <div id="text-target" class="pane-content" aria-live="polite">
+            <span class="placeholder">Çeviri burada görünecek…</span>
+          </div>
+        </div>
+      </div>
+      <div class="text-controls">
+        <button id="translate-btn" class="primary-btn">Çevir</button>
+        <button id="speak-text-btn" class="ghost-btn">🔊 İngilizcesini Dinle</button>
+        <button id="copy-btn" class="ghost-btn">📋 Kopyala</button>
+        <span id="text-status" class="inline-status"></span>
+      </div>
+    </section>
+
+    <!-- ============ SEVİYELİ PRATİK ============ -->
+    <section id="tab-practice" class="tab-panel">
+      <div class="practice-toolbar">
+        <div class="level-select" id="level-select"></div>
+        <label class="toggle support-toggle">
+          <input type="checkbox" id="support-mode" checked />
+          <span>🛟 Destek modu (cümle &amp; çeviri gizli başlar)</span>
+        </label>
+      </div>
+
+      <div id="paragraph-list" class="paragraph-list"></div>
+      <div id="practice-area" class="practice-area hidden">
+        <div class="practice-head">
+          <button id="back-to-list" class="ghost-btn">← Paragraflara dön</button>
+          <h2 id="practice-title"></h2>
+          <span id="practice-level-badge" class="level-badge"></span>
+        </div>
+        <p class="hint">
+          Her cümleyi önce <strong>dinleyin</strong>, kendiniz çevirmeyi deneyin;
+          takılırsanız <em>Cümleyi Göster</em> ve <em>Çeviriyi Göster</em> ile destek alın.
+        </p>
+        <div id="sentence-list" class="sentence-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>Çeviri servisi: MyMemory / Google (ücretsiz uç noktalar) · Ses: Web Speech API</small>
+  </footer>
+
+  <script src="js/paragraphs-data.js"></script>
+  <script src="js/translator.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
