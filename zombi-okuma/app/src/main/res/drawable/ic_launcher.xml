@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- mor arka plan -->
+    <path android:fillColor="#4B2C8C"
+        android:pathData="M54,2 A52,52 0 1,1 53.99,2 Z" />
+    <!-- yeşil zombi kafası -->
+    <path android:fillColor="#7BC86C"
+        android:pathData="M54,20 A32,32 0 1,1 53.99,20 Z" />
+    <!-- gözler -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M42,44 A8,8 0 1,1 41.99,44 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M66,44 A8,8 0 1,1 65.99,44 Z" />
+    <path android:fillColor="#26335A"
+        android:pathData="M42,49 A3,3 0 1,1 41.99,49 Z" />
+    <path android:fillColor="#26335A"
+        android:pathData="M66,49 A3,3 0 1,1 65.99,49 Z" />
+    <!-- ağız -->
+    <path android:fillColor="#26335A"
+        android:pathData="M40,66 L68,66 L68,71 L40,71 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M46,66 L50,66 L50,71 L46,71 Z M58,66 L62,66 L62,71 L58,71 Z" />
+</vector>
