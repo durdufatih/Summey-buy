@@ -26,6 +26,11 @@ dosyasını düzenleyin (heceler tire, kelimeler boşlukla ayrılır).
 
 ## APK'yı alma
 
+Hazır APK: **`apk/zombi-okuma.apk`** – telefona indirip kurun (Ayarlar'da
+"bilinmeyen kaynaklardan yükleme"ye izin vermeniz gerekebilir).
+
+Ayrıca:
+
 Bu klasörde değişiklik push edildiğinde GitHub Actions APK'yı otomatik derler:
 
 - **Releases → "Zombi Okuma (son sürüm)"** altından `zombi-okuma.apk` indirilebilir, veya

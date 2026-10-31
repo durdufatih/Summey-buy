@@ -67,11 +67,14 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
 
         buildUi();
 
-        tts = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS && tts != null) {
-                int r = tts.setLanguage(new Locale("tr", "TR"));
-                ttsReady = r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED;
-                tts.setSpeechRate(0.8f);
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS && tts != null) {
+                    int r = tts.setLanguage(new Locale("tr", "TR"));
+                    ttsReady = r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED;
+                    tts.setSpeechRate(0.8f);
+                }
             }
         });
 
@@ -127,7 +130,7 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
         top.setPadding(p, p, p, 0);
 
         TextView back = Ui.button(this, "⬅", 18, 0xCCFFFFFF, Ui.INK);
-        back.setOnClickListener(v -> finish());
+        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { finish(); } });
         top.addView(back);
 
         heartsView = Ui.label(this, "", 22, Color.WHITE, true);
@@ -167,15 +170,18 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
         endButtons.setOrientation(LinearLayout.HORIZONTAL);
         endButtons.setGravity(Gravity.CENTER);
         TextView again = Ui.button(this, "🔁 Tekrar Oyna", 18, 0xFFD9F5D0, Ui.INK);
-        again.setOnClickListener(v -> startRound());
+        again.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { startRound(); } });
         TextView menu = Ui.button(this, "🏠 Menü", 18, 0xFFCDE8FB, Ui.INK);
-        menu.setOnClickListener(v -> finish());
+        menu.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { finish(); } });
         endNext = Ui.button(this, "➡ Sonraki Görev", 18, 0xFFFFEFA8, Ui.INK);
-        endNext.setOnClickListener(v -> {
-            Intent it = new Intent(this, GameActivity.class);
-            it.putExtra(EXTRA_LEVEL, levelIndex + 1);
-            startActivity(it);
-            finish();
+        endNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent it = new Intent(GameActivity.this, GameActivity.class);
+                it.putExtra(EXTRA_LEVEL, levelIndex + 1);
+                startActivity(it);
+                finish();
+            }
         });
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, -2);
         blp.setMargins(Ui.dp(this, 6), 0, Ui.dp(this, 6), 0);
@@ -197,22 +203,29 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
         controls.setPadding(cp, cp, cp, cp);
 
         TextView listen = Ui.button(this, "🔊 Dinle", 18, 0xFFCDE8FB, Ui.INK);
-        listen.setOnClickListener(v -> speakWord());
+        listen.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { speakWord(); } });
 
         micButton = Ui.label(this, "", 20, Color.WHITE, true);
         micButton.setClickable(true);
         micButton.setElevation(Ui.dp(this, 6));
-        micButton.setOnClickListener(v -> onMicClicked());
+        micButton.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { onMicClicked(); } });
 
         TextView approve = Ui.button(this, "👍", 20, 0xFFD9F5D0, Ui.INK);
-        approve.setOnClickListener(v ->
-                Toast.makeText(this, "Yetişkin onayı için basılı tutun", Toast.LENGTH_SHORT).show());
-        approve.setOnLongClickListener(v -> {
-            if (!answered && !gameOver && gameView.isZombieActive()) {
-                cancelListening();
-                onCorrect();
+        approve.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(GameActivity.this, "Yetişkin onayı için basılı tutun", Toast.LENGTH_SHORT).show();
             }
-            return true;
+        });
+        approve.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (!answered && !gameOver && gameView.isZombieActive()) {
+                    cancelListening();
+                    onCorrect();
+                }
+                return true;
+            }
         });
 
         LinearLayout.LayoutParams side = new LinearLayout.LayoutParams(-2, -2);

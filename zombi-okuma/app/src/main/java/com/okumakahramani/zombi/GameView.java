@@ -212,7 +212,7 @@ public class GameView extends View {
                     for (int i = 0; i < 10; i++) {
                         spawn("💥", hx, groundY() - zombieSize() * 0.5f, zombieSize() * 0.2f, 0.7f);
                     }
-                    if (listener != null) post(listener::onZombieReachedHero);
+                    if (listener != null) post(new Runnable() { @Override public void run() { if (listener != null) listener.onZombieReachedHero(); } });
                 }
                 break;
             case Z_KNOCK:
@@ -227,7 +227,7 @@ public class GameView extends View {
                 zStateTime += dt;
                 if (zStateTime > 0.8f) {
                     zState = Z_GONE;
-                    if (listener != null) post(listener::onZombieVanished);
+                    if (listener != null) post(new Runnable() { @Override public void run() { if (listener != null) listener.onZombieVanished(); } });
                 }
                 break;
             default:

@@ -74,10 +74,13 @@ public class MainActivity extends Activity {
                     lv.emoji + "  " + (i + 1) + ". " + lv.title + "    " + starText + "\n" + lv.subtitle,
                     20, lv.color, Ui.INK);
             final int level = i;
-            b.setOnClickListener(v -> {
-                Intent it = new Intent(this, GameActivity.class);
-                it.putExtra(GameActivity.EXTRA_LEVEL, level);
-                startActivity(it);
+            b.setOnClickListener(new android.view.View.OnClickListener() {
+                @Override
+                public void onClick(android.view.View v) {
+                    Intent it = new Intent(MainActivity.this, GameActivity.class);
+                    it.putExtra(GameActivity.EXTRA_LEVEL, level);
+                    startActivity(it);
+                }
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
