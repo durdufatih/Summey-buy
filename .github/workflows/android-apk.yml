@@ -1,0 +1,59 @@
+name: Zombi Okuma - Android APK
+
+on:
+  push:
+    paths:
+      - 'zombi-okuma/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zombi-okuma
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Kelime eşleştirme testleri
+        run: |
+          mkdir -p /tmp/matcher
+          javac -encoding UTF-8 -d /tmp/matcher app/src/main/java/com/okumakahramani/zombi/SpeechMatcher.java
+          java -cp /tmp/matcher com.okumakahramani.zombi.SpeechMatcher
+
+      - name: APK derle
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk zombi-okuma.apk
+
+      - name: APK'yı yükle (Actions artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zombi-okuma-apk
+          path: zombi-okuma/zombi-okuma.apk
+
+      - name: Telefondan indirilebilir sürüm (Release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: zombi-okuma-latest
+          name: Zombi Okuma (son sürüm)
+          prerelease: true
+          body: |
+            Telefonunuza **zombi-okuma.apk** dosyasını indirip kurun.
+            (Bilinmeyen kaynaklardan yüklemeye izin vermeniz gerekebilir.)
+          files: zombi-okuma/zombi-okuma.apk
