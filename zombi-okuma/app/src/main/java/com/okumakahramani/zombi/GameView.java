@@ -54,6 +54,9 @@ public class GameView extends View {
 
     private WordItem word;
     private float speed = 0.03f;
+    /** Yanlış okumalarda artan hız çarpanı (yeni kelimede sıfırlanır). */
+    private float speedBoost = 1f;
+    private float angryTime = 99f;
     private int zState = Z_GONE;
     private float zombieX = 1.2f;
     private float zStateTime;
@@ -96,6 +99,8 @@ public class GameView extends View {
     public void setWord(WordItem w, float speed) {
         this.word = w;
         this.speed = speed;
+        speedBoost = 1f;
+        angryTime = 99f;
         zombieX = 1.15f;
         zState = Z_ENTER;
         zStateTime = 0;
@@ -137,6 +142,19 @@ public class GameView extends View {
         for (int i = 0; i < 26; i++) {
             spawn(glyphs[random.nextInt(glyphs.length)], cx, cy, zombieSize() * 0.22f, 1.1f);
         }
+    }
+
+    /** Yanlış okuma: zombi öne atılır ve hızlanır. Yeni çarpanı döndürür. */
+    public float angerZombie() {
+        if (zState != Z_WALK && zState != Z_ENTER) return speedBoost;
+        speedBoost = Math.min(4f, speedBoost * 1.6f);
+        zombieX = Math.max(HIT_X + 0.02f, zombieX - 0.07f);
+        angryTime = 0f;
+        float cx = zombieX * getWidth();
+        for (int i = 0; i < 6; i++) {
+            spawn("💢", cx, groundY() - zombieSize() * 0.8f, zombieSize() * 0.18f, 0.6f);
+        }
+        return speedBoost;
     }
 
     public void showMessage(String text, int color) {
@@ -193,6 +211,7 @@ public class GameView extends View {
         boardTime += dt;
         messageTime += dt;
         heroShake = Math.max(0f, heroShake - dt);
+        angryTime += dt;
 
         switch (zState) {
             case Z_ENTER:
@@ -203,7 +222,7 @@ public class GameView extends View {
                 }
                 break;
             case Z_WALK:
-                if (!listening) zombieX -= speed * dt;
+                if (!listening) zombieX -= speed * speedBoost * dt;
                 if (zombieX <= HIT_X) {
                     zState = Z_KNOCK;
                     zStateTime = 0;
@@ -331,7 +350,8 @@ public class GameView extends View {
         float size = zombieSize();
         float x = zombieX * getWidth();
         boolean moving = (zState == Z_WALK && !listening) || zState == Z_ENTER;
-        float bob = moving ? (float) Math.abs(Math.sin(time * 5)) * h * 0.015f : 0f;
+        float step = 5f * speedBoost;
+        float bob = moving ? (float) Math.abs(Math.sin(time * step)) * h * 0.015f : 0f;
         float y = groundY() + size * 0.06f - bob;
 
         c.save();
@@ -343,7 +363,7 @@ public class GameView extends View {
             alpha = (int) (255 * (1f - t));
             c.rotate(t * 540f, x, y - size * 0.4f);
         } else {
-            float tilt = moving ? (float) Math.sin(time * 5) * 6f : 0f;
+            float tilt = moving ? (float) Math.sin(time * step) * (6f + 3f * (speedBoost - 1f)) : 0f;
             if (listening) tilt = (float) Math.sin(time * 2) * 3f; // dinlerken "donmuş" titreme
             c.rotate(tilt, x, y);
         }
@@ -353,6 +373,14 @@ public class GameView extends View {
         emojiPaint.setTextSize(size);
         c.drawText("🧟", x, y, emojiPaint);
 
+        if (speedBoost > 1.01f && zState == Z_WALK) {
+            // kızgın zombi: hız çarpanı kadar 💢 işareti
+            float pulse = angryTime < 0.6f ? 1.4f - angryTime * 0.66f : 1f;
+            emojiPaint.setTextSize(size * 0.3f * pulse);
+            c.drawText("💢", x - size * 0.35f, y - size * 0.8f, emojiPaint);
+            emojiPaint.setTextSize(size * 0.16f);
+            c.drawText("×" + String.format(java.util.Locale.US, "%.1f", speedBoost), x, y - size * 1.05f, emojiPaint);
+        }
         if (listening && zState == Z_WALK) {
             emojiPaint.setTextSize(size * 0.35f);
             c.drawText("❄️", x + size * 0.35f, y - size * 0.75f, emojiPaint);
@@ -506,6 +534,9 @@ public class GameView extends View {
         float alpha = messageTime < 1.7f ? 1f : 1f - (messageTime - 1.7f) / 0.5f;
         float pop = messageTime < 0.2f ? 0.6f + 2f * messageTime : 1f;
         float size = h * 0.075f * pop;
+        textPaint.setTextSize(size);
+        float tw = textPaint.measureText(message);
+        if (tw > getWidth() * 0.94f) size *= getWidth() * 0.94f / tw;
         float y = h * 0.53f;
 
         strokePaint.setTextSize(size);

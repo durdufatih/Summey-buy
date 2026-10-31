@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,6 +15,7 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -44,6 +47,12 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
     private boolean ttsReady;
+    /** Türkçe seslendirme hiçbir motorda başlatılamadı. */
+    private boolean ttsFailed;
+    private boolean triedGoogleTts;
+    /** Motor hazır olmadan "Dinle"ye basılırsa, hazır olunca okunacak metin. */
+    private String pendingSpeech;
+    private static final String GOOGLE_TTS = "com.google.android.tts";
 
     private int levelIndex;
     private WordBank.Level level;
@@ -67,16 +76,8 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
 
         buildUi();
 
-        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS && tts != null) {
-                    int r = tts.setLanguage(new Locale("tr", "TR"));
-                    ttsReady = r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED;
-                    tts.setSpeechRate(0.8f);
-                }
-            }
-        });
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        initTts(null);
 
         startRound();
     }
@@ -86,6 +87,12 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
         super.onResume();
         Ui.immersive(this);
         if (!gameOver) gameView.setPaused(false);
+        // Ses paketi yükleme ekranından dönüldüyse seslendirmeyi yeniden dene
+        if (ttsFailed) {
+            ttsFailed = false;
+            triedGoogleTts = false;
+            initTts(null);
+        }
     }
 
     @Override
@@ -299,10 +306,15 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
     }
 
     private void onWrong(String heard) {
-        String msg = heard == null || heard.trim().isEmpty()
-                ? "Seni duyamadım 🙂 Tekrar dene!"
-                : "Duyduğum: \"" + heard + "\" — tekrar dene!";
-        gameView.showMessage(msg, 0xFFFFC2C2);
+        if (heard == null || heard.trim().isEmpty()) {
+            // Hiç ses duyulmadıysa ceza yok
+            gameView.showMessage("Seni duyamadım 🙂 Tekrar dene!", 0xFFFFC2C2);
+            return;
+        }
+        // Yanlış okuma: zombi kızar, öne atılır ve hızlanır
+        float boost = gameView.angerZombie();
+        String level = boost >= 3.9f ? "çok hızlı!" : "hızlandı!";
+        gameView.showMessage("\"" + heard + "\" değil! Zombi " + level + " 💨", 0xFFFF9A9A);
     }
 
     @Override
@@ -356,22 +368,151 @@ public class GameActivity extends Activity implements GameView.Listener, Recogni
 
     // ------------------------------------------------------------------ seslendirme
 
-    private void speak(String text) {
-        if (tts != null && ttsReady) {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "msg");
+    /** engine == null → telefonun varsayılan seslendirme motoru. */
+    private void initTts(String engine) {
+        if (tts != null) {
+            tts.shutdown();
+            tts = null;
         }
+        ttsReady = false;
+        TextToSpeech.OnInitListener l = new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(final int status) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        onTtsInit(status);
+                    }
+                });
+            }
+        };
+        tts = engine == null ? new TextToSpeech(this, l) : new TextToSpeech(this, l, engine);
+    }
+
+    private void onTtsInit(int status) {
+        if (tts == null || isFinishing()) return;
+        if (status == TextToSpeech.SUCCESS) {
+            int r = tts.setLanguage(new Locale("tr", "TR"));
+            if (r < TextToSpeech.LANG_AVAILABLE) r = tts.setLanguage(new Locale("tr"));
+            if (r >= TextToSpeech.LANG_AVAILABLE) {
+                ttsReady = true;
+                ttsFailed = false;
+                tts.setSpeechRate(0.8f);
+                tts.setAudioAttributes(new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build());
+                tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                    @Override public void onStart(String id) {}
+                    @Override public void onDone(String id) {}
+                    @Override
+                    @SuppressWarnings("deprecation")
+                    public void onError(String id) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameView.showMessage("Seslendirme çalışmadı 😕", 0xFFFFC2C2);
+                            }
+                        });
+                    }
+                });
+                if (pendingSpeech != null) {
+                    String p = pendingSpeech;
+                    pendingSpeech = null;
+                    speakNow(p);
+                }
+                return;
+            }
+        }
+        // Varsayılan motor Türkçe okuyamıyorsa Google motorunu dene
+        if (!triedGoogleTts && hasGoogleTts() && !GOOGLE_TTS.equals(tts.getDefaultEngine())) {
+            triedGoogleTts = true;
+            initTts(GOOGLE_TTS);
+            return;
+        }
+        ttsFailed = true;
+        if (pendingSpeech != null) {
+            pendingSpeech = null;
+            offerTtsInstall();
+        }
+    }
+
+    private boolean hasGoogleTts() {
+        if (tts == null) return false;
+        try {
+            for (TextToSpeech.EngineInfo e : tts.getEngines()) {
+                if (GOOGLE_TTS.equals(e.name)) return true;
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return false;
+    }
+
+    /** Türkçe ses paketi yoksa telefonun yükleme ekranını aç. */
+    private void offerTtsInstall() {
+        gameView.showMessage("Türkçe ses paketi gerekli – yükleme açılıyor", 0xFFFFC2C2);
+        Intent it = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+        if (hasGoogleTts()) it.setPackage(GOOGLE_TTS);
+        try {
+            startActivity(it);
+        } catch (RuntimeException e) {
+            try {
+                startActivity(new Intent("com.android.settings.TTS_SETTINGS"));
+            } catch (RuntimeException ignored) {
+                Toast.makeText(this, "Ayarlar > Metin okuma bölümünden Türkçe ses paketini yükleyin",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    /** Medya sesi tamamen kısıksa duyulabilir bir seviyeye aç. */
+    private void ensureAudible() {
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (am == null) return;
+        try {
+            if (am.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
+                int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, Math.max(1, max / 2), AudioManager.FLAG_SHOW_UI);
+                gameView.showMessage("Ses kapalıydı, açtım 🔊", 0xFFFFE066);
+            }
+        } catch (RuntimeException ignored) {
+            // Rahatsız Etmeyin modunda ses değiştirilemeyebilir
+        }
+    }
+
+    private void speakNow(String text) {
+        if (tts == null || !ttsReady) return;
+        ensureAudible();
+        Bundle params = new Bundle();
+        params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f);
+        int r = tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "u" + System.nanoTime());
+        if (r != TextToSpeech.SUCCESS) {
+            // motor bağlantısı koptuysa yeniden başlat ve tekrar dene
+            pendingSpeech = text;
+            initTts(null);
+        }
+    }
+
+    /** Övgü gibi kısa mesajlar: motor hazır değilse sessizce geç. */
+    private void speak(String text) {
+        if (tts != null && ttsReady) speakNow(text);
     }
 
     private void speakWord() {
         if (gameOver || words.isEmpty()) return;
-        if (!ttsReady) {
-            gameView.showMessage("Türkçe seslendirme bulunamadı", 0xFFFFC2C2);
-            return;
-        }
         if (listening) cancelListening();
         hintUsed = true;
         gameView.replayBoard();
-        speak(current().text);
+        String text = current().text;
+        if (ttsReady) {
+            speakNow(text);
+        } else if (ttsFailed) {
+            offerTtsInstall();
+        } else {
+            // motor hâlâ açılıyor: hazır olunca oku
+            pendingSpeech = text;
+            gameView.showMessage("Ses hazırlanıyor…", 0xFFFFE066);
+        }
     }
 
     // ------------------------------------------------------------------ konuşma tanıma

@@ -9,7 +9,10 @@ zombi yıldızlara dönüşüp yok olur ve yeni kelime gelir. Zombi kahramana
 ulaşırsa bir can gider (3 can).
 
 - Çocuk okurken zombi **durur** – amaç hız değil, doğru okuma.
-- **🔊 Dinle**: kelimeyi seslendirir (ipucu, puan 10 yerine 5).
+- **Yanlış okunursa** zombi kızar 💢, öne atılır ve her yanlışta 1,6 kat hızlanır
+  (en fazla 4 kat). Yeni kelimede hız normale döner. Hiç ses duyulmazsa ceza yok.
+- **🔊 Dinle**: kelimeyi seslendirir (ipucu, puan 10 yerine 5). Medya sesi kapalıysa
+  açılır; Türkçe ses paketi yoksa yükleme ekranı açılır.
 - **👍 (basılı tut)**: ses tanıma çocuğu duyamazsa yetişkin onayı.
 - Panoya dokununca heceler tekrar ayrılıp birleşir.
 
