@@ -1,0 +1,58 @@
+name: Tenis Koçu APK
+
+on:
+  push:
+    branches:
+      - ccr-395ec174-km1p0u
+      - main
+    paths:
+      - 'tenis-kocu/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tenis-kocu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: APK derle
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk TenisKocu.apk
+
+      - name: APK'yı yükle (Actions artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TenisKocu-apk
+          path: tenis-kocu/TenisKocu.apk
+
+      - name: Release olarak yayınla
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: tenis-kocu-latest
+          target_commitish: ${{ github.sha }}
+          name: Tenis Koçu (son sürüm)
+          make_latest: true
+          files: tenis-kocu/TenisKocu.apk
+          body: |
+            Tenis Koçu Android uygulamasının son sürümü.
+            Telefonundan **TenisKocu.apk** dosyasını indir, aç ve "Bilinmeyen kaynaklardan yükleme" iznini vererek kur.
+            Commit: ${{ github.sha }}
