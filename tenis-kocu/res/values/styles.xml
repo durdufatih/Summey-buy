@@ -1,0 +1,16 @@
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#2E7D32</item>
+        <item name="android:colorPrimaryDark">#1B5E20</item>
+        <item name="android:colorAccent">#2E7D32</item>
+        <item name="android:statusBarColor">#1B5E20</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+    <style name="AppTheme.Dark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorAccent">#C6FF00</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

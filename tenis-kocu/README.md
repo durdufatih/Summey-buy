@@ -6,7 +6,7 @@ gereken noktaları gösteren, **günün planını** ve **günün özetini** çı
 ## Özellikler
 
 - **Canlı kamera analizi** — Vücudundaki 33 nokta (omuz, dirsek, bilek, kalça, diz, ayak bileği…)
-  cihaz üzerinde ML Kit ile tespit edilir, iskelet görüntünün üstüne çizilir. İnternet gerekmez,
+  cihaz üzerinde TensorFlow Lite + BlazePose ile tespit edilir, iskelet görüntünün üstüne çizilir. İnternet gerekmez,
   görüntü hiçbir yere gönderilmez.
 - **Vuruş tespiti ve türü** — Bilek hızından vuruş anı yakalanır; forehand, backhand ve
   servis/smaç ayrılır.
@@ -29,10 +29,10 @@ gereken noktaları gösteren, **günün planını** ve **günün özetini** çı
 
 ## Kurulum (APK)
 
-1. GitHub'da **Releases → “Tenis Koçu (son sürüm)”** sayfasından `TenisKocu.apk` dosyasını
-   telefonuna indir (veya Actions sekmesindeki son çalışmadan `TenisKocu-apk` artifact'ını).
+1. Hazır APK: [`apk/TenisKocu.apk`](apk/TenisKocu.apk) — GitHub'da dosyayı açıp **Download raw file** ile
+   telefonuna indir (Actions çalışıyorsa Releases → “Tenis Koçu (son sürüm)” sayfasında da bulunur).
 2. Dosyayı aç; istenirse “Bilinmeyen kaynaklardan uygulama yükleme” iznini ver.
-3. Android 8.0 (API 26) ve üzeri gerekir.
+3. Android 8.0 (API 26) ve üzeri, ARM işlemcili telefon gerekir (neredeyse tüm telefonlar).
 
 ## Kullanım ipuçları
 
@@ -45,25 +45,31 @@ gereken noktaları gösteren, **günün planını** ve **günün özetini** çı
 
 ## Derleme
 
+Gradle ve Android Studio gerekmez; Ubuntu/Debian paketleriyle derlenir:
+
 ```bash
-cd tenis-kocu
-./gradlew assembleDebug
-# çıktı: app/build/outputs/apk/debug/app-debug.apk
+sudo apt-get install android-sdk-platform-23 aapt dalvik-exchange apksigner zipalign default-jdk
+./build.sh          # çıktı: apk/TenisKocu.apk
 ```
 
-Her push'ta `.github/workflows/android-apk.yml` APK'yı otomatik derleyip Release'e yükler.
+`build.sh` TensorFlow Lite'ı Maven Central'dan, BlazePose modellerini PyPI'deki `mediapipe`
+paketinden indirir. `.github/workflows/android-apk.yml` aynı betikle her push'ta APK üretir.
 
 ## Kod yapısı
 
 ```
-app/src/main/java/com/tenis/koc/
-  MainActivity.kt            Gezinme (Bugün / Geçmiş / Ayarlar, canlı ve video ekranları)
-  analysis/Frame.kt          Bir karedeki vücut noktaları ve açı hesapları
-  analysis/StrokeAnalyzer.kt Vuruş yakalama, tür belirleme ve hata kuralları
-  analysis/VideoAnalyzer.kt  Kayıtlı videoyu kare kare analiz
-  camera/PoseCamera.kt       CameraX + ML Kit, iskelet çizimi, sesli koç
-  plan/Coaching.kt           Günün özeti ve kişisel günlük plan
-  data/Stores.kt             Antrenmanların ve ayarların cihazda saklanması
-  model/Models.kt            Vuruş, hata kataloğu (ipuçları + drill'ler), antrenman
-  ui/                        Compose ekranları
+src/com/tenis/koc/
+  MainActivity.java     Bugün (plan + özet) / Geçmiş / Ayarlar sekmeleri
+  LiveActivity.java     Kamera, canlı iskelet çizimi, anlık geri bildirim
+  VideoActivity.java    Kayıtlı videoyu kare kare analiz
+  DetailActivity.java   Antrenman özeti ve vuruş vuruş liste
+  PoseEstimator.java    BlazePose (TFLite): kişi tespiti + 33 nokta, kareler arası takip
+  PixelSource.java      Kamera (NV21) ve bitmap piksellerini döndürerek okuma
+  StrokeAnalyzer.java   Vuruş yakalama, tür belirleme ve hata kuralları
+  Coaching.java         Günün özeti ve kişisel günlük plan
+  Fault.java            Hata kataloğu (ipuçları + drill'ler)
+  Store.java            Antrenmanlar ve ayarların cihazda saklanması
+  Ui.java, Overlays.java  Arayüz yardımcıları, iskelet görünümü, sesli koç
 ```
+
+Poz modelleri: MediaPipe BlazePose (Apache 2.0). TensorFlow Lite (Apache 2.0).
